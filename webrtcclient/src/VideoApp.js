@@ -4,23 +4,24 @@ import './App.css';
 function App() {
   const localVideoRef = useRef();
   const remoteVideoRef = useRef();
-  const remoteAudioRef = useRef();
   const pcRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState(null);
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 } },
-        audio: true  // Enable audio capture as well
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        }
       });
-      console.log('Camera and microphone accessed successfully');
+      console.log('Camera accessed successfully');
       localVideoRef.current.srcObject = stream;
       return stream;
     } catch (err) {
-      console.error('Error accessing media devices:', err);
-      setError('Failed to access media devices: ' + err.message);
+      console.error('Error accessing camera:', err);
+      setError('Failed to access camera: ' + err.message);
       return null;
     }
   };
@@ -39,11 +40,7 @@ function App() {
 
       pc.ontrack = (event) => {
         console.log('Received remote track');
-        if (event.track.kind === 'audio') {
-          remoteAudioRef.current.srcObject = event.streams[0];
-        } else if (event.track.kind === 'video') {
-          remoteVideoRef.current.srcObject = event.streams[0];
-        }
+        remoteVideoRef.current.srcObject = event.streams[0];
       };
 
       pc.oniceconnectionstatechange = () => {
@@ -51,6 +48,10 @@ function App() {
         if (pc.iceConnectionState === 'connected') {
           setIsConnected(true);
         }
+      };
+
+      pc.onconnectionstatechange = () => {
+        console.log('Connection state:', pc.connectionState);
       };
 
       return pc;
@@ -69,11 +70,11 @@ function App() {
 
       const pc = createPeerConnection();
       if (!pc) return;
-
+      
       pcRef.current = pc;
 
-      // Add local video and audio tracks to peer connection
-      stream.getTracks().forEach((track) => {
+      // Add local stream to peer connection
+      stream.getTracks().forEach(track => {
         console.log('Adding track to peer connection:', track.kind);
         pc.addTrack(track, stream);
       });
@@ -128,10 +129,6 @@ function App() {
         <div className="video-box">
           <h3>Processed Video (B&W)</h3>
           <video ref={remoteVideoRef} autoPlay playsInline />
-        </div>
-        <div className="video-box">
-          <h3>Remote Audio</h3>
-          <audio ref={remoteAudioRef} autoPlay controls />
         </div>
       </div>
       {error && <div className="error-message">{error}</div>}
